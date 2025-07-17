@@ -9,7 +9,7 @@ import base64
 st.set_page_config(page_title="Registro de Asistencia", page_icon="📝")
 
 # URL pública de la app (ponla cuando esté desplegada)
-app_url = "https://crispy-guide-x546vqqx4xjghpj4x-8502.app.github.dev/"  # CAMBIA ESTO después de hacer el deploy
+app_url = "https://movies-dataset-q8gsks5ohe.streamlit.app/"  # CAMBIA ESTO después de hacer el deploy
 
 # Título y formulario
 st.title("📝 Registro de Asistencia")

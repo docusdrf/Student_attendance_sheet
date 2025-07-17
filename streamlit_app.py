@@ -1,66 +1,38 @@
-import altair as alt
-import pandas as pd
 import streamlit as st
+import pandas as pd
+from datetime import datetime
+import qrcode
+from io import BytesIO
+import base64
 
-# Show the page title and description.
-st.set_page_config(page_title="Movies dataset", page_icon="🎬")
-st.title("🎬 Movies dataset")
-st.write(
-    """
-    This app visualizes data from [The Movie Database (TMDB)](https://www.kaggle.com/datasets/tmdb/tmdb-movie-metadata).
-    It shows which movie genre performed best at the box office over the years. Just 
-    click on the widgets below to explore!
-    """
-)
+# Configuración de la página
+st.set_page_config(page_title="Registro de Asistencia", page_icon="📝")
 
+# URL pública de la app (ponla cuando esté desplegada)
+app_url = "https://crispy-guide-x546vqqx4xjghpj4x-8502.app.github.dev/"  # CAMBIA ESTO después de hacer el deploy
 
-# Load the data from a CSV. We're caching this so it doesn't reload every time the app
-# reruns (e.g. if the user interacts with the widgets).
-@st.cache_data
-def load_data():
-    df = pd.read_csv("data/movies_genres_summary.csv")
-    return df
+# Título y formulario
+st.title("📝 Registro de Asistencia")
+st.write("Introduce tu nombre y correo para registrar tu asistencia.")
 
+nombre = st.text_input("Nombre")
+email = st.text_input("Correo electrónico")
 
-df = load_data()
+if st.button("Enviar"):
+    if nombre.strip() and email.strip():
+        # Guardar en CSV local
+        df = pd.DataFrame([[nombre, email, datetime.now().isoformat()]],
+                          columns=["Nombre", "Email", "Fecha"])
+        df.to_csv("asistencia.csv", mode='a', index=False, header=False)
+        st.success("✅ ¡Asistencia registrada!")
+    else:
+        st.warning("⚠️ Por favor, rellena ambos campos.")
 
-# Show a multiselect widget with the genres using `st.multiselect`.
-genres = st.multiselect(
-    "Genres",
-    df.genre.unique(),
-    ["Action", "Adventure", "Biography", "Comedy", "Drama", "Horror"],
-)
-
-# Show a slider widget with the years using `st.slider`.
-years = st.slider("Years", 1986, 2006, (2000, 2016))
-
-# Filter the dataframe based on the widget input and reshape it.
-df_filtered = df[(df["genre"].isin(genres)) & (df["year"].between(years[0], years[1]))]
-df_reshaped = df_filtered.pivot_table(
-    index="year", columns="genre", values="gross", aggfunc="sum", fill_value=0
-)
-df_reshaped = df_reshaped.sort_values(by="year", ascending=False)
+# Generar y mostrar el código QR con la URL de la app
+st.subheader("📱 Accede a esta página desde tu móvil")
+qr = qrcode.make(app_url)
+buf = BytesIO()
+qr.save(buf, format="PNG")
+st.image(buf.getvalue(), caption="Escanea este QR para abrir la app", use_column_width=False)
 
 
-# Display the data as a table using `st.dataframe`.
-st.dataframe(
-    df_reshaped,
-    use_container_width=True,
-    column_config={"year": st.column_config.TextColumn("Year")},
-)
-
-# Display the data as an Altair chart using `st.altair_chart`.
-df_chart = pd.melt(
-    df_reshaped.reset_index(), id_vars="year", var_name="genre", value_name="gross"
-)
-chart = (
-    alt.Chart(df_chart)
-    .mark_line()
-    .encode(
-        x=alt.X("year:N", title="Year"),
-        y=alt.Y("gross:Q", title="Gross earnings ($)"),
-        color="genre:N",
-    )
-    .properties(height=320)
-)
-st.altair_chart(chart, use_container_width=True)
